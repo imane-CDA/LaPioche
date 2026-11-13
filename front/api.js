@@ -52,10 +52,10 @@ function translateValidation(part) {
   if ((match = part.match(/^(\w+) is less than minimum of (\d+)/))) {
     return `${label(match[1])} doit être d'au moins ${match[2]}.`;
   }
-  if ((match = part.match(/^(\w+) is not a\(n\) Int$/))) {
+  if ((match = part.match(/^(\w+) is not an Int$/))) {
     return `${label(match[1])} doit être un nombre entier.`;
   }
-  if ((match = part.match(/^(\w+) is not a\(n\) Bool$/))) {
+  if ((match = part.match(/^(\w+) is not a Bool$/))) {
     return `${label(match[1])} doit valoir « oui » ou « non ».`;
   }
   if (/^email is not a valid email address$/.test(part)) {

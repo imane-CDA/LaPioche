@@ -4,48 +4,85 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>La Pioche - Ludothèque</title>
+  <!-- CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+    
+  <!-- barre de navigation -->
   <header class="topbar">
     <h1>La Pioche</h1>
+    
+    <!-- navigation entre sections -->
     <nav aria-label="Sections">
       <a href="#games" data-tab="games">Jeux</a>
       <a href="#members" data-tab="members">Adhérent·es</a>
     </nav>
+    
+    <!-- documentation API -->
     <a class="docs-link" id="docs-link" href="http://localhost:8081/">Documentation API</a>
   </header>
 
+  <!-- contenu principal -->
   <main>
+      
+    <!-- section jeux -->
     <section id="games" class="tab" hidden>
+        
+      <!-- titre et bouton d'ajout jeu -->
       <div class="section-head">
         <h2>Jeux</h2>
         <button type="button" id="add-game" class="primary">Ajouter un jeu</button>
       </div>
+      
+      <!-- message si aucun jeu n'est enregistré -->
       <p id="games-empty" class="empty" hidden>La ludothèque ne contient aucun jeu pour le moment. Cliquez sur « Ajouter un jeu » pour créer le premier.</p>
+      
+      <!-- liste des jeux -->
       <ul id="games-list" class="cards"></ul>
+      
     </section>
 
+    <!-- section membres -->
     <section id="members" class="tab" hidden>
+        
+      <!-- titre et bouton d'ajout membre -->
       <div class="section-head">
         <h2>Adhérent·es</h2>
         <button type="button" id="add-member" class="primary">Ajouter un·e adhérent·e</button>
       </div>
+      
+      <!-- Message si aucun membre n'est enregistré -->
       <p id="members-empty" class="empty" hidden>Aucun·e adhérent·e pour le moment. Cliquez sur « Ajouter un·e adhérent·e » pour créer le premier ou la première.</p>
+      
+      <!-- liste des membres -->
       <ul id="members-list" class="rows"></ul>
+      
     </section>
   </main>
 
+  <!-- Formulaires-->
   <dialog id="game-dialog">
+      
+    <!-- Formualaire ajout jeu -->
     <form method="dialog" id="game-form" novalidate>
       <h2>Ajouter un jeu</h2>
+      
+      <!-- titre jeu -->
       <label>Titre <input name="title" required></label>
       <div class="pair">
+          
+          <!-- nbr de joueurs (min/max) -->
         <label>Joueur·ses min <input type="number" name="minPlayers" min="1" step="1" required></label>
         <label>Joueur·ses max <input type="number" name="maxPlayers" min="1" step="1" required></label>
       </div>
+      
+      <!-- durée du jeu -->
       <label>Durée (minutes) <input type="number" name="durationMinutes" min="1" step="1" required></label>
       <p class="form-error" role="alert" hidden></p>
+      
+      <!-- buttons (annuler/enregister) -->
       <div class="actions">
         <button type="button" data-cancel>Annuler</button>
         <button type="submit" class="primary">Enregistrer</button>
@@ -53,12 +90,46 @@
     </form>
   </dialog>
 
+    <!-- fenêtre de confirmation de supression -->
+     <dialog id="delete-game-dialog">
+
+      <!-- formulaire de confirmation de supression -->
+      <form method="dialog" id="delete-game-form">
+
+        <!-- titre -->
+         <h2>Confirmer la suppression</h2>
+
+         <!-- paragraphe -->
+          <p id="delete-game-message"></p>
+
+          <!-- messages d'erreurs -->
+           <p class="form-error" role="alert" hidden></p>
+
+           <!-- bouttons(annuler/supprimer) -->
+            <div class="actions">
+              <button type="button" data-cancel="">Annuler</button>
+              <button type="button" id="confirm-delete-game" class="danger">Supprimer</button>
+            </div>
+      </form>
+     </dialog>
+
+  <!-- Formualaire ajout d'un membre -->
   <dialog id="member-dialog">
     <form method="dialog" id="member-form" novalidate>
+        
+      <!-- titre -->
       <h2>Ajouter un·e adhérent·e</h2>
+      
+      <!-- nom -->
       <label>Nom <input name="name" required></label>
+      
+      <!-- email -->
       <label>Adresse e-mail <input type="email" name="email" required></label>
+      
+      <!-- messages d'erreurs -->
       <p class="form-error" role="alert" hidden></p>
+      
+      <!-- buttons (Annuler/enregistrer)  -->
       <div class="actions">
         <button type="button" data-cancel>Annuler</button>
         <button type="submit" class="primary">Enregistrer</button>
@@ -66,14 +137,23 @@
     </form>
   </dialog>
 
+  <!-- formulaire d'emprun -->
   <dialog id="borrow-dialog">
     <form method="dialog" id="borrow-form">
+        
+        <!-- titre -->
       <h2 id="borrow-dialog-title"></h2>
       <label>Adhérent·e
         <select name="memberID" required></select>
       </label>
+      
+      <!-- date de retour -->
       <p class="hint">Retour prévu dans 14 jours.</p>
+      
+      <!-- messages erreurs -->
       <p class="form-error" role="alert" hidden></p>
+      
+      <!-- buttons (annuler/emprunter) -->
       <div class="actions">
         <button type="button" data-cancel>Annuler</button>
         <button type="submit" class="primary">Emprunter</button>
@@ -81,8 +161,10 @@
     </form>
   </dialog>
 
+  <!-- statut -->
   <div id="toasts" role="status" aria-live="polite"></div>
 
+  <!-- javaScript -->
   <script type="module" src="app.js"></script>
 </body>
 </html>

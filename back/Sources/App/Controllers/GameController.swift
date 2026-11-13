@@ -6,8 +6,12 @@ struct GameController: RouteCollection {
         let games = routes.grouped("games")
         games.get(use: index)
         games.post(use: create)
-        games.get(":gameID", use: show)
-    }
+        
+           let gameID = games.grouped(":gameID")
+            gameID.get(use: show)
+            gameID.put(use: update)
+            gameID.delete(use: delete)
+        }
 
     @Sendable
     func index(req: Request) async throws -> [GameDTO] {
@@ -52,5 +56,55 @@ struct GameController: RouteCollection {
             throw Abort(.notFound, reason: "Game not found")
         }
         return game
+    }
+    
+    @Sendable
+    func update(req: Request) async throws -> GameDTO {
+        guard let gameID = req.parameters.get("gameID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Invalid game id")
+        }
+
+        guard let game = try await Game.query(on: req.db)
+            .filter(\.$id == gameID)
+            .with(\.$loans)
+            .first()
+        else {
+            throw Abort(.notFound, reason: "Game not found")
+        }
+
+        let dto = try req.content.decode(CreateGameDTO.self)
+
+        try dto.ensureConsistentPlayerCount()
+
+        game.title = dto.title
+        game.minPlayers = dto.minPlayers
+        game.maxPlayers = dto.maxPlayers
+        game.durationMinutes = dto.durationMinutes
+
+        try await game.update(on: req.db)
+
+        return game.toDTO()
+    }
+    
+    @Sendable
+    func delete(req: Request) async throws -> HTTPStatus {
+        guard let gameID = req.parameters.get("gameID", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "Invalid game id")
+        }
+        guard let game = try await Game.query(on: req.db)
+            .filter(\.$id == gameID)
+            .with(\.$loans)
+            .first()
+        else {
+            throw Abort(.notFound, reason: "Game not found")
+        }
+        
+        guard game.loans.isEmpty else {
+            throw Abort(.conflict, reason: "This game has borrowing history")
+        }
+        
+        try await game.delete(on: req.db)
+
+        return .noContent
     }
 }

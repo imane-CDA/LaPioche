@@ -106,12 +106,29 @@ async function request(method, path, body) {
   return data;
 }
 
+// routes de l'API
 export const api = {
-  listGames: () => request("GET", "/games"),
-  createGame: (game) => request("POST", "/games", game),
 
+  // JEUX :
+
+  // récupérer tous les jeux
+  listGames: () => request("GET", "/games"),
+  // créer un nouveau jeu
+  createGame: (game) => request("POST", "/games", game),
+  // modifier un jeu existant
+  updateGame: (gameID, game) => request("PUT", `/games/${gameID}`, game),
+  // supprimer un jeu
+  deleteGame: (gameID) => request("DELETE", `/games/${gameID}`),
+
+  // MEMBRES : 
+
+  // récupérer tous les membres
   listMembers: () => request("GET", "/members"),
+  // ajouter un membre
   createMember: (member) => request("POST", "/members", member),
 
+  // EMPRUNS :
+
+  // modifier un emprun
   borrow: (gameID, memberID) => request("POST", "/loans", { gameID, memberID }),
 };

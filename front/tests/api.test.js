@@ -24,6 +24,18 @@ test("translateError never lets unknown English through", () => {
   assertEqual(translateError(418, "teapot"), "Une erreur est survenue. Réessayez.");
 });
 
+// erreur Int et Bool
+test("translateError translates invalid Int and Bool values", () => {
+  assertEqual(
+    translateError(400, "minPlayers is not an Int"),
+    "Le nombre minimum de joueur·ses doit être un nombre entier."
+  );
+  assertEqual(
+    translateError(400, "available is not a Bool"),
+    "Le filtre de disponibilité doit valoir « oui » ou « non »."
+  );
+});
+
 // --- requêtes envoyées à l'API
 
 test("listGames calls GET /games", async () => {
@@ -39,6 +51,41 @@ test("createGame sends a JSON POST", async () => {
   assertEqual(calls[0].method, "POST");
   assertEqual(calls[0].body, game);
   assertEqual(created.id, "1");
+});
+
+// test de modification
+test("updateGame sends a JSON PUT", async () => {
+  const { fetch, calls } = fakeApi({
+    "PUT /games/g1": [200, { id: "g1", title: "Catan modifié" }],
+  });
+
+  const game = {
+    title: "Catan modifié",
+    minPlayers: 3,
+    maxPlayers: 4,
+    durationMinutes: 90,
+  };
+
+  const updated = await withFakeFetch(fetch, () =>
+    api.updateGame("g1", game)
+  );
+
+  assertEqual(calls[0].method, "PUT");
+  assertEqual(calls[0].path, "/games/g1");
+  assertEqual(calls[0].body, game);
+  assertEqual(updated.title, "Catan modifié");
+});
+
+// test de suppression
+test("deleteGame sends a DELETE request", async () => {
+  const { fetch, calls } = fakeApi({
+    "DELETE /games/g1": [204],
+  });
+
+  await withFakeFetch(fetch, () => api.deleteGame("g1"));
+
+  assertEqual(calls[0].method, "DELETE");
+  assertEqual(calls[0].path, "/games/g1");
 });
 
 test("borrow sends the game and the member", async () => {
@@ -75,3 +122,47 @@ test("a game already on loan (409) gives a French message", async () => {
   assertEqual(error.status, 409);
   assertEqual(error.message, "Ce jeu est déjà emprunté : il faut d'abord le rendre.");
 });
+
+// test de refus de la supression par l'API
+test("deleting a game with loans gives a French error", async () => {
+  const { fetch } = fakeApi({
+    "DELETE /games/g1": [
+      409,
+      { error: true, reason: "A game with loans cannot be deleted" },
+    ],
+  });
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.deleteGame("g1"))
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 409);
+  assertIncludes(error.message, "historique d'emprunts");
+});
+
+// test erreur jeu introuvable
+test("updating a missing game gives a French error", async () => {
+  const { fetch } = fakeApi({
+    "PUT /games/unknown": [
+      404,
+      { error: true, reason: "Game not found" },
+    ],
+  });
+
+  const game = {
+    title: "Catan",
+    minPlayers: 3,
+    maxPlayers: 4,
+    durationMinutes: 90,
+  };
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.updateGame("unknown", game))
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 404);
+  assertIncludes(error.message, "n'existe pas");
+});
+

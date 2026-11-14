@@ -7,17 +7,24 @@ struct GameDTO: Content {
     let maxPlayers: Int
     let durationMinutes: Int
     let isAvailable: Bool
+    let activeLoanID: UUID?
 }
 
 extension Game {
     func toDTO() -> GameDTO {
-        GameDTO(
+        
+        let activeLoan = ($loans.value ?? []).first {
+            $0.returnedAt == nil
+        }
+        
+        return GameDTO(
             id: id,
             title: title,
             minPlayers: minPlayers,
             maxPlayers: maxPlayers,
             durationMinutes: durationMinutes,
-            isAvailable: isAvailable
+            isAvailable: isAvailable,
+            activeLoanID: activeLoan?.id
         )
     }
 }

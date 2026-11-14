@@ -76,6 +76,93 @@ test("updateGame sends a JSON PUT", async () => {
   assertEqual(updated.title, "Catan modifié");
 });
 
+// test de modification d'un membre
+test("updateMember sends a JSON PUT", async () => {
+  const { fetch, calls } = fakeApi({
+    "PUT /members/m1": [200, {
+      id: "m1",
+      name: "Camille modifiée",
+      email: "camille@example.com",
+    }],
+  });
+
+  const member = {
+    name: "Camille modifiée",
+    email: "camille@example.com",
+  };
+
+  const updated = await withFakeFetch(fetch, () =>
+    api.updateMember("m1", member)
+  );
+
+  assertEqual(calls[0].method, "PUT");
+  assertEqual(calls[0].path, "/members/m1");
+  assertEqual(calls[0].body, member);
+  assertEqual(updated.name, "Camille modifiée");
+});
+
+// test de suppression d'un membre
+test("deleteMember sends a DELETE request", async () => {
+  const { fetch, calls } = fakeApi({
+    "DELETE /members/m1": [204],
+  });
+
+  await withFakeFetch(fetch, () => api.deleteMember("m1"));
+
+  assertEqual(calls[0].method, "DELETE");
+  assertEqual(calls[0].path, "/members/m1");
+});
+
+// Tester l'erreur d'e-mail en doublon
+test("updating a member with an existing email gives a French error", async () => {
+  const { fetch } = fakeApi({
+    "PUT /members/m1": [
+      409,
+      {
+        error: true,
+        reason: "A member with this email already exists",
+      },
+    ],
+  });
+
+  const member = {
+    name: "Camille",
+    email: "autre@example.com",
+  };
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.updateMember("m1", member))
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 409);
+  assertEqual(
+    error.message,
+    "Un·e autre adhérent·e utilise déjà cette adresse e-mail."
+  );
+});
+
+// Tester la suppression interdite
+test("deleting a member with loans gives a French error", async () => {
+  const { fetch } = fakeApi({
+    "DELETE /members/m1": [
+      409,
+      {
+        error: true,
+        reason: "A member with loans cannot be deleted",
+      },
+    ],
+  });
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.deleteMember("m1"))
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 409);
+  assertIncludes(error.message, "historique d'emprunts");
+});
+
 // test de suppression
 test("deleteGame sends a DELETE request", async () => {
   const { fetch, calls } = fakeApi({

@@ -279,6 +279,40 @@ test("editing a member sends a PUT request and reloads the list", async () => {
   );
 });
 
+// refus de modification
+test("a member update error is shown in French and the form stays open", async () => {
+  const app = await mountApp(
+    {
+      "GET /members": [camille],
+      "PUT /members/m1": [
+        409,
+        {
+          error: true,
+          reason: "A member with this email already exists",
+        },
+      ],
+    },
+    { hash: "#members" },
+  );
+  await waitFor(() => app.$$("#members-list .row").length === 1);
+  app.click("Modifier", app.$("#members-list .row"));
+  const form = app.$("#member-form");
+  form.elements.email.value = "autre@example.com";
+  form.requestSubmit();
+  await waitFor(
+    () => !app.$("#member-dialog .form-error").hidden,
+    "le message d'erreur",
+  );
+  assertIncludes(
+    app.$("#member-dialog .form-error").textContent,
+    "utilise déjà cette adresse e-mail",
+  );
+  assertTrue(
+    app.$("#member-dialog").open,
+    "le formulaire devrait rester ouvert",
+  );
+});
+
 // supression réussie d'un membre
 test("deleting a member confirms the action and reloads the list", async () => {
   let members = [camille];

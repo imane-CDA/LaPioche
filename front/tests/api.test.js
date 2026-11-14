@@ -5,7 +5,14 @@ import { fakeApi, withFakeFetch } from "./helpers.js";
 // --- translateError : les messages de l'API deviennent des phrases en français
 
 test("translateError translates a known message", () => {
-  assertEqual(translateError(409, "Game is already on loan"), "Ce jeu est déjà emprunté : il faut d'abord le rendre.");
+  assertEqual(translateError(409, "Game is already borrowed"), "Ce jeu est déjà emprunté : il faut d'abord le rendre.");
+});
+
+test("translateError translates an already returned loan", () => {
+  assertEqual(
+    translateError(409, "Loan has already been returned"),
+    "Cet emprunt a déjà été rendu."
+  );
 });
 
 test("translateError translates each validation error separately", () => {
@@ -181,6 +188,18 @@ test("borrow sends the game and the member", async () => {
   assertEqual(calls[0].body, { gameID: "g1", memberID: "m1" });
 });
 
+test("returnLoan sends a POST request to the loan return route", async () => {
+  const { fetch, calls } = fakeApi({
+    "POST /loans/l1/return": [200, { id: "l1", returnedAt: "2026-11-14T12:00:00Z" }],
+  });
+
+  await withFakeFetch(fetch, () => api.returnLoan("l1"));
+
+  assertEqual(calls[0].method, "POST");
+  assertEqual(calls[0].path, "/loans/l1/return");
+});
+
+
 // --- erreurs
 
 // Attend qu'une promesse échoue et renvoie l'erreur (échoue si elle réussit).
@@ -203,7 +222,7 @@ test("an unreachable server gives a clear message", async () => {
 });
 
 test("a game already on loan (409) gives a French message", async () => {
-  const { fetch } = fakeApi({ "POST /loans": [409, { error: true, reason: "Game is already on loan" }] });
+  const { fetch } = fakeApi({ "POST /loans": [409, { error: true, reason: "Game is already borrowed" }] });
   const error = await expectError(withFakeFetch(fetch, () => api.borrow("g1", "m1")));
   assertTrue(error instanceof ApiError, "l'erreur devrait être une ApiError");
   assertEqual(error.status, 409);

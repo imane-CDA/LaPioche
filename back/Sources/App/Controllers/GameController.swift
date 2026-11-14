@@ -72,8 +72,8 @@ struct GameController: RouteCollection {
             throw Abort(.notFound, reason: "Game not found")
         }
 
+        try CreateGameDTO.validate(content: req)
         let dto = try req.content.decode(CreateGameDTO.self)
-
         try dto.ensureConsistentPlayerCount()
 
         game.title = dto.title

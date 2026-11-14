@@ -126,9 +126,14 @@ export const api = {
   listMembers: () => request("GET", "/members"),
   // ajouter un membre
   createMember: (member) => request("POST", "/members", member),
-
+  // modifier un membre existant
+    updateMember: (memberID, member) => request("PUT", `/members/${memberID}`, member),
+  // supprimer un membre
+      deleteMember: (memberID) => request("DELETE", `/members/${memberID}`),
+    
   // EMPRUNS :
 
   // modifier un emprun
   borrow: (gameID, memberID) => request("POST", "/loans", { gameID, memberID }),
+    
 };

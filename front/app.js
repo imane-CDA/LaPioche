@@ -313,31 +313,165 @@ bindSubmit(borrowDialog, borrowForm, async (data) => {
 
 // --- Adhérent·es -----------------------------------------------------------
 
+// fenêtre de confirmation de suppression d'un membre
+const deleteMemberDialog = $("#delete-member-dialog");
+// texte
+const deleteMemberMessage = $("#delete-member-message");
+// bouton de confirmation
+const confirmDeleteMemberButton = $("#confirm-delete-member");
+// membre en cours de suppression (deletingMember.id)
+let deletingMember = null;
+
+// ouvre la fenêtre de confirmation de suppression
+function openDeleteMemberDialog(member) {
+
+  // objet pour la modification
+  deletingMember = member;
+
+  // message de confirmation
+  deleteMemberMessage.textContent =
+    `Voulez-vous vraiment supprimer l'adhérent·e « ${member.name} » ?`;
+
+  // efface anciennes erreurs
+  showFormError(deleteMemberDialog, null);
+
+  // ouvre la fenêtre
+  deleteMemberDialog.showModal();
+}
+
+// action lors du clic sur le bouton de confirmation
+confirmDeleteMemberButton.addEventListener("click", async () => {
+  // vérification : membre sélectionné sinon pas d'apel API
+  if (!deletingMember) return;
+
+  // désactive le bouton (1 seul clik)
+  confirmDeleteMemberButton.disabled = true;
+
+  // efface anciennes erreurs
+  showFormError(deleteMemberDialog, null);
+
+  try {
+
+    // appel à l'API pour supprimer le membre
+    await api.deleteMember(deletingMember.id);
+
+    // si hitstorique d'empruns
+  } catch (error) {
+
+    // affiche l'erreur dans la fenêtre sans la fermer
+    showFormError(deleteMemberDialog, error);
+
+    // réactive le bouton pour permettre une nouvelle tentative
+    confirmDeleteMemberButton.disabled = false;
+
+    return;
+  }
+
+  // succès ? fermeture de la la fenêtre
+  deleteMemberDialog.close();
+
+  // membre éffacé
+  deletingMember = null;
+
+  // réactivation du bouton
+  confirmDeleteMemberButton.disabled = false;
+
+  // message utilisateur
+  toast("L'adhérent·e a bien été supprimé·e.");
+
+  // actualisation de la liste des membres
+  await refresh();
+});
+
 async function loadMembers() {
   const members = await api.listMembers();
   $("#members-empty").hidden = members.length > 0;
   $("#members-list").replaceChildren(...members.map(memberRow));
 }
 
+// card member
 function memberRow(member) {
+  // div actions
+  const actions = el("div", { class: "actions" });
+
+  // bouttons
+  actions.append(button("Modifier", () => openEditMemberDialog(member)));
+  actions.append(button("Supprimer", () => openDeleteMemberDialog(member), "danger"));
+
   return el(
     "li",
     { class: "row" },
-    el("div", { class: "row-main" }, el("p", {}, el("strong", {}, member.name)), el("p", { class: "meta" }, member.email)),
+    el(
+      "div",
+      { class: "row-main" },
+      el("p", {}, el("strong", {}, member.name)),
+      el("p", { class: "meta" }, member.email),
+    ),
+    // div actions à l'interieur de li
+    actions,
   );
 }
 
 const memberDialog = $("#member-dialog");
 const memberForm = $("#member-form");
+// null = ajouter
+let editingMember = null;
 
-$("#add-member").addEventListener("click", () => {
-  memberForm.reset();
+// formulaire de modification
+function openEditMemberDialog(member) {
+
+  editingMember = member;
+
+  // titre
+  $("h2", memberForm).textContent = "Modifier un·e adhérent·e";
+
+  // nom
+  memberForm.elements.name.value = member.name;
+
+  // email
+  memberForm.elements.email.value = member.email;
+
+  // efface anciennes erreurs
   showFormError(memberDialog, null);
+
+  // ouvre la fenêtre
+  memberDialog.showModal();
+}
+
+// adapter le bouton ajouter
+$("#add-member").addEventListener("click", () => {
+  // null = création
+  editingMember = null;
+
+  // vide les champs du formulaire
+  memberForm.reset();
+
+  // titre initial
+  $("h2", memberForm).textContent = "Ajouter un·e adhérent·e";
+
+  // efface anciennes erreurs
+  showFormError(memberDialog, null);
+
+  // ouvre la fenêtre
   memberDialog.showModal();
 });
 
-bindSubmit(memberDialog, memberForm, (data) =>
-  api.createMember({ name: data.get("name").trim(), email: data.get("email").trim() }),
-);
+// bouton enregister : création ? modification ?
+bindSubmit(memberDialog, memberForm, (data) => {
+
+  // Récupération des données du formulaire
+  const member = {
+    name: data.get("name").trim(),
+    email: data.get("email").trim(),
+  };
+
+  // Si modification
+  if (editingMember) {
+    return api.updateMember(editingMember.id, member);
+  }
+
+  // Sinon création 
+  return api.createMember(member);
+});
 
 refresh();

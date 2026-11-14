@@ -90,7 +90,7 @@
     </form>
   </dialog>
 
-    <!-- fenêtre de confirmation de supression -->
+    <!-- fenêtre de confirmation de supression du jeu -->
      <dialog id="delete-game-dialog">
 
       <!-- formulaire de confirmation de supression -->
@@ -136,6 +136,29 @@
       </div>
     </form>
   </dialog>
+
+  <!-- fenêtre de confirmation de supression du membre -->
+     <dialog id="delete-member-dialog">
+
+      <!-- formulaire de confirmation de supression -->
+      <form method="dialog" id="delete-member-form">
+
+        <!-- titre -->
+         <h2>Confirmer la suppression</h2>
+
+         <!-- paragraphe -->
+          <p id="delete-member-message"></p>
+
+          <!-- messages d'erreurs -->
+           <p class="form-error" role="alert" hidden></p>
+
+           <!-- bouttons(annuler/supprimer) -->
+            <div class="actions">
+              <button type="button" data-cancel="">Annuler</button>
+              <button type="button" id="confirm-delete-member" class="danger">Supprimer</button>
+            </div>
+      </form>
+     </dialog>
 
   <!-- formulaire d'emprun -->
   <dialog id="borrow-dialog">

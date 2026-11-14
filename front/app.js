@@ -122,10 +122,12 @@ function gameCard(game) {
   // () => : action lors du clik
   const actions = el("div", { class: "actions" });
 
-  // bouton emprunter
-  if (game.isAvailable) {
-    actions.append(button("Emprunter", () => openBorrowDialog(game), "primary"));
-  }
+    // Actions selon la disponibilité du jeu
+    if (game.isAvailable) {
+      actions.append(button("Emprunter", () => openBorrowDialog(game), "primary"));
+    } else {
+      actions.append(button("Rendre", () => returnGame(game), "primary"));
+    }
 
   // bouton modifier
   actions.append(button("Modifier", () => openEditDialog(game)));
@@ -303,6 +305,16 @@ async function openBorrowDialog(game) {
     );
     showFormError(borrowDialog, null);
     borrowDialog.showModal();
+  });
+}
+
+async function returnGame(game) {
+  await run(async () => {
+    await api.returnLoan(game.activeLoanID);
+
+    toast(`« ${game.title} » a bien été rendu.`);
+
+    await refresh();
   });
 }
 

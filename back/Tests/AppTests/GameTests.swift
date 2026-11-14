@@ -13,6 +13,7 @@ final class GameTests: XCTestCase {
                 let game = try res.content.decode(GameDTO.self)
                 XCTAssertEqual(game.title, "Catan")
                 XCTAssertTrue(game.isAvailable)
+                XCTAssertNil(game.activeLoanID)
             })
         }
     }
@@ -49,6 +50,41 @@ final class GameTests: XCTestCase {
             try await app.test(.GET, "games", afterResponse: { res async throws in
                 XCTAssertEqual(res.status, .ok)
                 XCTAssertEqual(try res.content.decode([GameDTO].self).count, 2)
+            })
+        }
+    }
+    
+    func testListGamesIncludesActiveLoanID() async throws {
+        try await withApp { app in
+            let game = try await createGame(app)
+            let member = try await createMember(app)
+
+            let gameID = try XCTUnwrap(game.id)
+            let memberID = try XCTUnwrap(member.id)
+
+            let borrowedAt = Date()
+            let dueAt = try Loan.dueDate(from: borrowedAt)
+
+            let loan = try await insertLoan(
+                app,
+                gameID: gameID,
+                memberID: memberID,
+                borrowedAt: borrowedAt,
+                dueAt: dueAt
+            )
+
+            let loanID = try XCTUnwrap(loan.id)
+            
+            try await app.test(.GET, "games", afterResponse: { res async throws in
+                XCTAssertEqual(res.status, .ok)
+
+                let games = try res.content.decode([GameDTO].self)
+                let returnedGame = try XCTUnwrap(
+                    games.first { $0.id == gameID }
+                )
+
+                XCTAssertFalse(returnedGame.isAvailable)
+                XCTAssertEqual(returnedGame.activeLoanID, loanID)
             })
         }
     }

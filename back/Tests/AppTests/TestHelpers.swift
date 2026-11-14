@@ -49,6 +49,8 @@ func createMember(
 }
 
 // The API cannot create a loan that is already late, so tests insert it directly.
+// @discardableResult : Allows callers to ignore the returned loan when they don't need it
+@discardableResult
 func insertLoan(
     _ app: Application,
     gameID: UUID,
@@ -56,8 +58,9 @@ func insertLoan(
     borrowedAt: Date,
     dueAt: Date,
     returnedAt: Date? = nil
-) async throws {
+) async throws -> Loan {
     let loan = Loan(gameID: gameID, memberID: memberID, borrowedAt: borrowedAt, dueAt: dueAt)
     loan.returnedAt = returnedAt
     try await loan.save(on: app.db)
+    return loan
 }

@@ -2,7 +2,7 @@ import { assertEqual, assertIncludes, assertTrue, test, waitFor } from "./runner
 import { mountApp } from "./helpers.js";
 
 const catan = { id: "g1", title: "Catan", minPlayers: 3, maxPlayers: 4, durationMinutes: 90, isAvailable: true };
-const dixit = { id: "g2", title: "Dixit", minPlayers: 3, maxPlayers: 6, durationMinutes: 30, isAvailable: false };
+const dixit = { id: "g2", title: "Dixit", minPlayers: 3, maxPlayers: 6, durationMinutes: 30, isAvailable: false, activeLoanID: "l2" };
 const camille = { id: "m1", name: "Camille", email: "camille@example.com" };
 
 const cardOf = (app, title) => app.$$("#games-list .card").find((card) => card.querySelector("h3").textContent === title);
@@ -17,12 +17,107 @@ test("games list shows one card per game with its availability", async () => {
   assertIncludes(cardOf(app, "Catan").textContent, "3 à 4 joueur·ses · 90 min");
 });
 
-test("only an available game offers Borrow", async () => {
+test("available games offer Borrow and borrowed games offer Return", async () => {
   const app = await mountApp({ "GET /games": [catan, dixit] });
+
   await waitFor(() => app.$$("#games-list .card").length === 2);
-  const labels = (title) => [...cardOf(app, title).querySelectorAll("button")].map((button) => button.textContent);
-  assertTrue(labels("Catan").includes("Emprunter"), "Catan devrait proposer Emprunter");
-  assertTrue(!labels("Dixit").includes("Emprunter"), "Dixit est emprunté, il ne doit pas proposer Emprunter");
+
+  const labels = (title) =>
+    [...cardOf(app, title).querySelectorAll("button")].map((button) =>
+      button.textContent.trim()
+    );
+
+  assertTrue(
+    labels("Catan").includes("Emprunter"),
+    "Catan devrait proposer Emprunter"
+  );
+
+  assertTrue(
+    labels("Dixit").includes("Rendre"),
+    "Dixit devrait proposer Rendre"
+  );
+
+  assertTrue(
+    !labels("Dixit").includes("Emprunter"),
+    "Dixit ne devrait pas proposer Emprunter"
+  );
+});
+
+test("returning a borrowed game calls the API and makes it available again", async () => {
+  let returned = false;
+
+  const app = await mountApp({
+    "GET /games": () =>
+      returned
+        ? [{ ...dixit, isAvailable: true, activeLoanID: null }]
+        : [dixit],
+
+    "POST /loans/l2/return": () => {
+      returned = true;
+      return [
+        200,
+        {
+          id: "l2",
+          gameID: "g2",
+          memberID: "m1",
+          borrowedAt: new Date().toISOString(),
+          dueAt: new Date().toISOString(),
+          returnedAt: new Date().toISOString(),
+        },
+      ];
+    },
+  });
+
+  await waitFor(
+    () => app.$$("#games-list .card").length === 1,
+    "la carte de Dixit"
+  );
+
+  app.click("Rendre", cardOf(app, "Dixit"));
+
+  await waitFor(
+    () => app.calls.some(
+      (call) => call.method === "POST" && call.path === "/loans/l2/return"
+    ),
+    "l'appel POST de retour"
+  );
+
+  await waitFor(
+    () => app.$("#toasts").textContent.includes("bien été rendu"),
+    "le message de confirmation"
+  );
+
+  await waitFor(
+    () => cardOf(app, "Dixit").textContent.includes("Disponible"),
+    "le jeu redevenu disponible"
+  );
+
+  assertTrue(
+    [...cardOf(app, "Dixit").querySelectorAll("button")]
+      .some((button) => button.textContent.trim() === "Emprunter"),
+    "Dixit devrait proposer Emprunter après son retour"
+  );
+});
+
+test("returning an already returned loan displays a French error", async () => {
+  const app = await mountApp({
+    "GET /games": [dixit],
+    "POST /loans/l2/return": [
+      409,
+      {
+        error: true,
+        reason: "Loan has already been returned",
+      },
+    ],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 1);
+  app.click("Rendre", cardOf(app, "Dixit"));
+
+  await waitFor(
+    () => app.$("#toasts").textContent.includes("Cet emprunt a déjà été rendu."),
+    "le message d'erreur en français"
+  );
 });
 
 test("with no game, a message invites to add one", async () => {

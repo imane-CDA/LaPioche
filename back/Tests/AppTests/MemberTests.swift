@@ -221,6 +221,7 @@ final class MemberTests: XCTestCase {
         }
     }
     
+    // refuser la suppression d'un membre ayant un historique d'emprunts
     func testDeleteMemberWithReturnedLoanReturnsConflict() async throws {
         try await withApp { app in
             let game = try await createGame(app)
@@ -246,4 +247,132 @@ final class MemberTests: XCTestCase {
                 }
             )
         }
-    }}
+    }
+
+    // membre avec plusieurs emprunts (en cours et retourné)
+    func testGetMemberLoansReturnsActiveAndReturnedLoans() async throws {
+        try await withApp { app in
+            let member = try await createMember(app)
+            let memberID = try XCTUnwrap(member.id)
+
+            let activeGame = try await createGame(app, title: "Catan")
+            let returnedGame = try await createGame(app, title: "Azul")
+
+            let borrowedAt = Date(timeIntervalSinceNow: -10 * 24 * 60 * 60)
+            let dueAt = try XCTUnwrap(
+                Calendar.current.date(
+                    byAdding: .day,
+                    value: 14,
+                    to: borrowedAt
+                )
+            )
+
+            try await insertLoan(
+                app,
+                gameID: XCTUnwrap(activeGame.id),
+                memberID: memberID,
+                borrowedAt: borrowedAt,
+                dueAt: dueAt
+            )
+
+            let returnedAt = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
+
+            try await insertLoan(
+                app,
+                gameID: XCTUnwrap(returnedGame.id),
+                memberID: memberID,
+                borrowedAt: borrowedAt,
+                dueAt: dueAt,
+                returnedAt: returnedAt
+            )
+
+            try await app.test(
+                .GET,
+                "members/\(memberID)/loans",
+                afterResponse: { res async throws in
+                    XCTAssertEqual(res.status, .ok)
+
+                    let loans = try res.content.decode([MemberLoanDTO].self)
+
+                    XCTAssertEqual(loans.count, 2)
+
+                    let activeLoan = try XCTUnwrap(
+                        loans.first { $0.gameTitle == "Catan" }
+                    )
+                    XCTAssertNil(activeLoan.returnedAt)
+                    
+                    XCTAssertEqual(
+                        activeLoan.borrowedAt.timeIntervalSince1970,
+                        borrowedAt.timeIntervalSince1970,
+                        accuracy: 1
+                    )
+                    
+                    XCTAssertEqual(
+                        activeLoan.dueAt.timeIntervalSince1970,
+                        dueAt.timeIntervalSince1970,
+                        accuracy: 1
+                    )
+
+                    let returnedLoan = try XCTUnwrap(
+                        loans.first { $0.gameTitle == "Azul" }
+                    )
+                    XCTAssertNotNil(returnedLoan.returnedAt)
+                    
+                    let actualReturnedAt = try XCTUnwrap(returnedLoan.returnedAt)
+
+                    XCTAssertEqual(
+                        actualReturnedAt.timeIntervalSince1970,
+                        returnedAt.timeIntervalSince1970,
+                        accuracy: 1
+                    )
+                }
+            )
+        }
+    }
+    
+    // membre sans emprunt
+    func testGetMemberLoansReturnsEmptyArrayWhenMemberHasNoLoans() async throws {
+        try await withApp { app in
+            let member = try await createMember(app)
+            let memberID = try XCTUnwrap(member.id)
+
+            try await app.test(
+                .GET,
+                "members/\(memberID)/loans",
+                afterResponse: { res async throws in
+                    XCTAssertEqual(res.status, .ok)
+
+                    let loans = try res.content.decode([MemberLoanDTO].self)
+                    XCTAssertTrue(loans.isEmpty)
+                }
+            )
+        }
+    }
+
+    // membre inexistant
+    func testGetLoansForUnknownMemberReturnsNotFound() async throws {
+        try await withApp { app in
+            try await app.test(
+                .GET,
+                "members/\(UUID())/loans",
+                afterResponse: { res async throws in
+                    XCTAssertEqual(res.status, .notFound)
+                }
+            )
+        }
+    }
+
+    // id mal formé
+    func testGetMemberLoansWithMalformedIDReturnsBadRequest() async throws {
+        try await withApp { app in
+            try await app.test(
+                .GET,
+                "members/not-a-uuid/loans",
+                afterResponse: { res async throws in
+                    XCTAssertEqual(res.status, .badRequest)
+                }
+            )
+        }
+    }
+    
+}

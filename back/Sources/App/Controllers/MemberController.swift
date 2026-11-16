@@ -9,6 +9,7 @@ struct MemberController: RouteCollection {
 
         let memberID = members.grouped(":memberID")
         memberID.get(use: show)
+        memberID.get("loans", use: loans)
         memberID.put(use: update)
         memberID.delete(use: delete)
     }
@@ -113,4 +114,24 @@ struct MemberController: RouteCollection {
 
         return .noContent
     }
+    
+    @Sendable
+    func loans(req: Request) async throws -> [MemberLoanDTO] {
+        guard let memberID = req.parameters.get("memberID", as: UUID.self)
+        else {
+            throw Abort(.badRequest, reason: "Invalid member id")
+        }
+
+        guard try await Member.find(memberID, on: req.db) != nil else {
+            throw Abort(.notFound, reason: "Member not found")
+        }
+
+        let loans = try await Loan.query(on: req.db)
+            .filter(\.$member.$id == memberID)
+            .with(\.$game)
+            .all()
+
+        return loans.map { $0.toMemberLoanDTO() }
+    }
+
 }

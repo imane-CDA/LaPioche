@@ -114,7 +114,7 @@ struct MemberController: RouteCollection {
 
         return .noContent
     }
-    
+
     @Sendable
     func loans(req: Request) async throws -> [MemberLoanDTO] {
         guard let memberID = req.parameters.get("memberID", as: UUID.self)

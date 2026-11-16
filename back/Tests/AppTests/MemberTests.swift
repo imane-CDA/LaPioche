@@ -42,7 +42,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // modifier un utilisateur
     func testUpdateMemberReturnsUpdatedMember() async throws {
         try await withApp { app in
@@ -64,7 +64,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // garder son propre email
     func testUpdateMemberWithSameEmailDoesNotReturnConflict() async throws {
         try await withApp { app in
@@ -81,7 +81,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // Refuser un email déjà utilisée
     func testUpdateMemberWithDuplicateEmailReturnsConflict() async throws {
         try await withApp { app in
@@ -109,7 +109,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // refuser un body invalide
     func testUpdateMemberWithInvalidEmailIsRejected() async throws {
         try await withApp { app in
@@ -126,7 +126,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // Refuser un id inexistant
     func testUpdateUnknownMemberReturnsNotFound() async throws {
         try await withApp { app in
@@ -140,7 +140,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // refuser un id mal formé
     func testUpdateMemberWithMalformedIDReturnsBadRequest() async throws {
         try await withApp { app in
@@ -154,7 +154,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // supprimer un utilisateur
     func testDeleteMemberReturnsNoContent() async throws {
         try await withApp { app in
@@ -170,7 +170,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // Refuser la suppression d'un membre ayant un historique d'emprunts
     func testDeleteMemberWithLoanHistoryReturnsConflict() async throws {
         try await withApp { app in
@@ -202,7 +202,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // Refuser la suppression d'un membre inexistant
     func testDeleteUnknownMemberReturnsNotFound() async throws {
         try await withApp { app in
@@ -211,7 +211,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // Refuser un id mal formé
     func testDeleteMemberWithMalformedIDReturnsBadRequest() async throws {
         try await withApp { app in
@@ -220,7 +220,7 @@ final class MemberTests: XCTestCase {
             })
         }
     }
-    
+
     // refuser la suppression d'un membre ayant un historique d'emprunts
     func testDeleteMemberWithReturnedLoanReturnsConflict() async throws {
         try await withApp { app in
@@ -300,13 +300,13 @@ final class MemberTests: XCTestCase {
                         loans.first { $0.gameTitle == "Catan" }
                     )
                     XCTAssertNil(activeLoan.returnedAt)
-                    
+
                     XCTAssertEqual(
                         activeLoan.borrowedAt.timeIntervalSince1970,
                         borrowedAt.timeIntervalSince1970,
                         accuracy: 1
                     )
-                    
+
                     XCTAssertEqual(
                         activeLoan.dueAt.timeIntervalSince1970,
                         dueAt.timeIntervalSince1970,
@@ -317,7 +317,7 @@ final class MemberTests: XCTestCase {
                         loans.first { $0.gameTitle == "Azul" }
                     )
                     XCTAssertNotNil(returnedLoan.returnedAt)
-                    
+
                     let actualReturnedAt = try XCTUnwrap(returnedLoan.returnedAt)
 
                     XCTAssertEqual(
@@ -329,7 +329,7 @@ final class MemberTests: XCTestCase {
             )
         }
     }
-    
+
     // membre sans emprunt
     func testGetMemberLoansReturnsEmptyArrayWhenMemberHasNoLoans() async throws {
         try await withApp { app in
@@ -374,5 +374,5 @@ final class MemberTests: XCTestCase {
             )
         }
     }
-    
+
 }

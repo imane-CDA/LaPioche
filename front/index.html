@@ -18,6 +18,7 @@
     <nav aria-label="Sections">
       <a href="#games" data-tab="games">Jeux</a>
       <a href="#members" data-tab="members">Adhérent·es</a>
+      <a href="#overdue" data-tab="overdue">Retards</a>
     </nav>
     
     <!-- documentation API -->
@@ -58,8 +59,21 @@
       
       <!-- liste des membres -->
       <ul id="members-list" class="rows"></ul>
-      
     </section>
+
+    <!-- Section des emprunts en retard -->
+    <section id="overdue" class="tab" hidden>
+      <div class="section-head">
+        <h2>Emprunts en retard</h2>
+        <p id="overdue-count" class="badge busy">0 emprunt en retard</p>
+      </div>
+
+      <p id="overdue-empty" class="empty" hidden>
+        Aucun emprunt en retard. Tous les jeux sont à jour.
+      </p>
+
+      <ul id="overdue-list" class="rows"></ul>
+</section>
   </main>
 
   <!-- Formulaires-->

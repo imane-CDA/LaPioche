@@ -78,7 +78,7 @@ function bindSubmit(dialog, form, handler) {
 
 // --- Onglets ---------------------------------------------------------------
 
-const tabs = ["games", "members"];
+const tabs = ["games", "members", "overdue"];
 
 function currentTab() {
   const name = location.hash.slice(1);
@@ -91,7 +91,13 @@ async function refresh() {
     $(`#${name}`).hidden = name !== tab;
     $(`[data-tab="${name}"]`).toggleAttribute("aria-current", name === tab);
   }
-  await run(tab === "games" ? loadGames : loadMembers);
+    const loaders = {
+      games: loadGames,
+      members: loadMembers,
+      overdue: loadOverdueLoans,
+    };
+
+    await run(loaders[tab]);
 }
 
 window.addEventListener("hashchange", refresh);
@@ -399,6 +405,48 @@ async function loadMembers() {
   const members = await api.listMembers();
   $("#members-empty").hidden = members.length > 0;
   $("#members-list").replaceChildren(...members.map(memberRow));
+}
+
+// --- Emprunts en retard -----------------------------------------------------
+
+async function loadOverdueLoans() {
+  const loans = await api.getOverdueLoans();
+
+  $("#overdue-count").textContent =
+    `${loans.length} emprunt${loans.length > 1 ? "s" : ""} en retard`;
+
+  $("#overdue-empty").hidden = loans.length > 0;
+
+  $("#overdue-list").replaceChildren(...loans.map(overdueLoanRow));
+}
+
+// Afficher un emprunt en retard
+function overdueLoanRow(loan) {
+  const dueDate = new Date(loan.dueAt);
+  const now = new Date();
+
+  // Nombre de jours de retard, avec un minimum de 1 jour.
+  const overdueDays = Math.max(
+    1,
+    Math.ceil((now.getTime() - dueDate.getTime()) / (24 * 60 * 60 * 1000))
+  );
+
+  return el(
+    "li",
+    { class: "row overdue-row" },
+    el(
+      "div",
+      { class: "row-main" },
+      el("p", {}, el("strong", {}, loan.gameTitle)),
+      el("p", { class: "meta" }, `Adhérent·e : ${loan.memberName}`),
+      el("p", { class: "meta" }, `À rendre depuis le : ${formatDate(loan.dueAt)}`),
+      el(
+        "p",
+        { class: "overdue-status" },
+        `⚠ En retard de ${overdueDays} jour${overdueDays > 1 ? "s" : ""}`
+      ),
+    ),
+  );
 }
 
 // Afficher un emprunt dans l'historique

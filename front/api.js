@@ -136,6 +136,9 @@ export const api = {
     
   // EMPRUNS :
 
+    // récupérer les emprunts en retard
+    getOverdueLoans: () => request("GET", "/loans/overdue"),
+
   // modifier un emprun
   borrow: (gameID, memberID) => request("POST", "/loans", { gameID, memberID }),
     

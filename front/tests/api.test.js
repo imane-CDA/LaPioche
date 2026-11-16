@@ -240,6 +240,44 @@ test("returnLoan sends a POST request to the loan return route", async () => {
   assertEqual(calls[0].path, "/loans/l1/return");
 });
 
+test("getOverdueLoans calls GET /loans/overdue", async () => {
+  const loans = [
+    {
+      id: "l1",
+      gameTitle: "Catan",
+      memberName: "Camille",
+      borrowedAt: "2026-10-20T10:00:00Z",
+      dueAt: "2026-11-03T10:00:00Z",
+    },
+  ];
+
+  const { fetch, calls } = fakeApi({
+    "GET /loans/overdue": loans,
+  });
+
+  const result = await withFakeFetch(fetch, () => api.getOverdueLoans());
+
+  assertEqual(calls[0].method, "GET");
+  assertEqual(calls[0].path, "/loans/overdue");
+  assertEqual(result, loans);
+});
+
+test("getOverdueLoans gives a French error when the server fails", async () => {
+  const { fetch } = fakeApi({
+    "GET /loans/overdue": [
+      500,
+      { error: true, reason: "Internal Server Error" },
+    ],
+  });
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.getOverdueLoans())
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 500);
+  assertIncludes(error.message, "Le serveur a rencontré une erreur");
+});
 
 // --- erreurs
 

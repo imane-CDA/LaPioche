@@ -401,12 +401,39 @@ async function loadMembers() {
   $("#members-list").replaceChildren(...members.map(memberRow));
 }
 
+// Afficher un emprunt dans l'historique
+function memberLoanRow(loan) {
+  let status;
+
+  if (loan.returnedAt) {
+    status = "Rendu";
+  } else if (new Date(loan.dueAt) < new Date()) {
+    status = "En retard";
+  } else {
+    status = "En cours";
+  }
+
+  return el(
+    "li",
+    { class: "row" },
+    el(
+      "div",
+      { class: "row-main" },
+      el("p", {}, el("strong", {}, loan.gameTitle)),
+      el("p", { class: "meta" }, `Emprunté le : ${formatDate(loan.borrowedAt)}`),
+      el("p", { class: "meta" }, `À rendre le : ${formatDate(loan.dueAt)}`),
+      el("p", { class: "meta" }, `Statut : ${status}`),
+    ),
+  );
+}
+
 // card member
 function memberRow(member) {
   // div actions
   const actions = el("div", { class: "actions" });
 
   // bouttons
+  actions.append(button("Historique", () => openMemberLoansDialog(member)));
   actions.append(button("Modifier", () => openEditMemberDialog(member)));
   actions.append(button("Supprimer", () => openDeleteMemberDialog(member), "danger"));
 
@@ -422,6 +449,24 @@ function memberRow(member) {
     // div actions à l'interieur de li
     actions,
   );
+}
+
+// Ouvrir l'historique des emprunts
+async function openMemberLoansDialog(member) {
+  await run(async () => {
+    const loans = await api.getMemberLoans(member.id);
+
+    const list = $("#member-loans-list");
+    const empty = $("#member-loans-empty");
+
+    empty.hidden = loans.length > 0;
+    list.replaceChildren(...loans.map(memberLoanRow));
+
+    $("#member-loans-title").textContent =
+      `Historique des emprunts de ${member.name}`;
+
+    $("#member-loans-dialog").showModal();
+  });
 }
 
 const memberDialog = $("#member-dialog");

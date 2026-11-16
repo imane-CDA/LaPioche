@@ -51,6 +51,47 @@ test("listGames calls GET /games", async () => {
   assertEqual(`${calls[0].method} ${calls[0].path}`, "GET /games");
 });
 
+test("getMemberLoans calls GET /members/:id/loans", async () => {
+  const loans = [
+    {
+      id: "l1",
+      gameTitle: "Catan",
+      borrowedAt: "2026-11-01T10:00:00Z",
+      dueAt: "2026-11-15T10:00:00Z",
+      returnedAt: null,
+    },
+  ];
+
+  const { fetch, calls } = fakeApi({
+    "GET /members/m1/loans": loans,
+  });
+
+  const result = await withFakeFetch(fetch, () =>
+    api.getMemberLoans("m1")
+  );
+
+  assertEqual(calls[0].method, "GET");
+  assertEqual(calls[0].path, "/members/m1/loans");
+  assertEqual(result, loans);
+});
+
+test("getMemberLoans gives a French error for an unknown member", async () => {
+  const { fetch } = fakeApi({
+    "GET /members/unknown/loans": [
+      404,
+      { error: true, reason: "Member not found" },
+    ],
+  });
+
+  const error = await expectError(
+    withFakeFetch(fetch, () => api.getMemberLoans("unknown"))
+  );
+
+  assertTrue(error instanceof ApiError);
+  assertEqual(error.status, 404);
+  assertIncludes(error.message, "n'existe pas");
+});
+
 test("createGame sends a JSON POST", async () => {
   const { fetch, calls } = fakeApi({ "POST /games": [201, { id: "1" }] });
   const game = { title: "Catan", minPlayers: 3, maxPlayers: 4, durationMinutes: 90 };

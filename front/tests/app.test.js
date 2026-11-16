@@ -307,6 +307,125 @@ test("members tab lists the members", async () => {
   assertIncludes(app.$("#members-list .row").textContent, "camille@example.com");
 });
 
+test("member loan history displays returned, active and overdue loans", async () => {
+  const loans = [
+    {
+      id: "l1",
+      gameTitle: "Catan",
+      borrowedAt: "2026-01-01T10:00:00.000Z",
+      dueAt: "2026-01-15T10:00:00.000Z",
+      returnedAt: "2026-01-10T10:00:00.000Z",
+    },
+    {
+      id: "l2",
+      gameTitle: "Dixit",
+      borrowedAt: "2026-11-01T10:00:00.000Z",
+      dueAt: "2026-11-30T10:00:00.000Z",
+      returnedAt: null,
+    },
+    {
+      id: "l3",
+      gameTitle: "Azul",
+      borrowedAt: "2026-01-01T10:00:00.000Z",
+      dueAt: "2026-01-15T10:00:00.000Z",
+      returnedAt: null,
+    },
+  ];
+
+  const app = await mountApp({
+    "GET /members": [camille],
+    "GET /members/m1/loans": loans,
+  }, { hash: "#members" });
+
+  await waitFor(() => app.$$("#members-list .row").length === 1);
+
+  const historyButton = [...app.$$("#members-list button")]
+    .find((button) => button.textContent === "Historique");
+
+  assertTrue(historyButton, "The history button should exist");
+
+  historyButton.click();
+
+  await waitFor(() => app.$("#member-loans-dialog").open);
+
+  await waitFor(() => app.$$("#member-loans-list .row").length === 3);
+
+  const history = app.$("#member-loans-list").textContent;
+
+  assertIncludes(history, "Catan");
+  assertIncludes(history, "Dixit");
+  assertIncludes(history, "Azul");
+  assertIncludes(history, "Rendu");
+  assertIncludes(history, "En cours");
+  assertIncludes(history, "En retard");
+});
+
+test("member loan history displays an empty state when there are no loans", async () => {
+  const app = await mountApp({
+    "GET /members": [camille],
+    "GET /members/m1/loans": [],
+  }, { hash: "#members" });
+
+  await waitFor(() => app.$$("#members-list .row").length === 1);
+
+  const historyButton = [...app.$$("#members-list button")]
+    .find((button) => button.textContent === "Historique");
+
+  assertTrue(historyButton, "The history button should exist");
+
+  historyButton.click();
+
+  await waitFor(() => !app.$("#member-loans-dialog").open);
+  await waitFor(() => app.$("#member-loans-empty").hidden);
+
+  assertIncludes(
+    app.$("#member-loans-empty").textContent,
+    "aucun emprunt"
+  );
+
+  assertEqual(app.$$("#member-loans-list .row").length, 0);
+});
+
+test("a member loan history error is shown in French", async () => {
+  const app = await mountApp(
+    {
+      "GET /members": [camille],
+      "GET /members/m1/loans": [
+        404,
+        {
+          error: true,
+          reason: "Member not found",
+        },
+      ],
+    },
+    { hash: "#members" },
+  );
+
+  await waitFor(() => app.$$("#members-list .row").length === 1);
+
+  const historyButton = [...app.$$("#members-list button")]
+    .find((button) => button.textContent === "Historique");
+
+  assertTrue(historyButton, "The history button should exist");
+
+  historyButton.click();
+
+  await waitFor(
+    () => app.$$("#toasts > *").length > 0,
+    "le message d'erreur",
+  );
+
+  assertIncludes(
+    app.$("#toasts").textContent,
+    "adhérent",
+  );
+
+  assertTrue(
+    !app.$("#member-loans-dialog").open,
+    "the history dialog should stay closed after an error",
+  );
+});
+
 test("with no member, a message invites to add one", async () => {
   const app = await mountApp({ "GET /members": [] }, { hash: "#members" });
   await waitFor(() => !app.$("#members-empty").hidden);

@@ -124,6 +124,9 @@ export const api = {
 
   // récupérer tous les membres
   listMembers: () => request("GET", "/members"),
+  // récupérer l'historique des emprunts d'un membre
+    getMemberLoans: (memberID) =>
+        request("GET", `/members/${memberID}/loans`),
   // ajouter un membre
   createMember: (member) => request("POST", "/members", member),
   // modifier un membre existant

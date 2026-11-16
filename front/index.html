@@ -113,6 +113,23 @@
       </form>
      </dialog>
 
+  <!-- formulaire d'emprun -->
+  <dialog id="member-loans-dialog">
+    <section aria-labelledby="member-loans-title">
+      <h2 id="member-loans-title">Historique des emprunts</h2>
+
+      <p id="member-loans-empty" class="empty" hidden>
+        Cet·te adhérent·e n'a encore aucun emprunt.
+      </p>
+
+      <ul id="member-loans-list" class="rows"></ul>
+
+      <div class="actions">
+        <button type="button" data-cancel>Fermer</button>
+      </div>
+    </section>
+  </dialog>
+
   <!-- Formualaire ajout d'un membre -->
   <dialog id="member-dialog">
     <form method="dialog" id="member-form" novalidate>

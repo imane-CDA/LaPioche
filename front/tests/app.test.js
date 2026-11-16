@@ -607,3 +607,85 @@ test("a member deletion error is shown in French and the dialog stays open", asy
     "la fenêtre de confirmation devrait rester ouverte",
   );
 });
+
+// Emprunts en retard
+
+test("overdue loans tab displays loans and overdue count", async () => {
+  const loans = [
+    {
+      id: "l1",
+      gameTitle: "Catan",
+      memberName: "Camille",
+      borrowedAt: "2026-10-20T10:00:00.000Z",
+      dueAt: "2026-11-13T10:00:00.000Z",
+    },
+  ];
+
+  const app = await mountApp(
+    {
+      "GET /loans/overdue": loans,
+    },
+    { hash: "#overdue" },
+  );
+
+  await waitFor(
+    () => app.$$("#overdue-list .row").length === 1,
+    "affichage de l'emprunt en retard",
+  );
+
+  const row = app.$("#overdue-list .row");
+
+  assertIncludes(row.textContent, "Catan");
+  assertIncludes(row.textContent, "Camille");
+  assertIncludes(row.textContent, "À rendre depuis le");
+  assertIncludes(row.textContent, "En retard de");
+
+  assertEqual(
+    app.$("#overdue-count").textContent,
+    "1 emprunt en retard",
+  );
+});
+
+test("overdue loans tab displays an empty state when there are no overdue loans", async () => {
+  const app = await mountApp(
+    {
+      "GET /loans/overdue": [],
+    },
+    { hash: "#overdue" },
+  );
+
+  await waitFor(
+    () => !app.$("#overdue-empty").hidden,
+    "le message indiquant qu'il n'y a aucun retard",
+  );
+
+  assertIncludes(
+    app.$("#overdue-empty").textContent,
+    "Aucun emprunt en retard",
+  );
+
+  assertEqual(app.$$("#overdue-list .row").length, 0);
+  assertEqual(app.$("#overdue-count").textContent, "0 emprunt en retard");
+});
+
+test("overdue loans API error is shown in French", async () => {
+  const app = await mountApp(
+    {
+      "GET /loans/overdue": [
+        500,
+        { error: true, reason: "Internal Server Error" },
+      ],
+    },
+    { hash: "#overdue" },
+  );
+
+  await waitFor(
+    () =>
+      app.$("#toasts").textContent.includes(
+        "Le serveur a rencontré une erreur",
+      ),
+    "le message d'erreur en français",
+  );
+
+  assertEqual(app.$$("#overdue-list .row").length, 0);
+});

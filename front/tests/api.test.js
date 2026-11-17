@@ -51,6 +51,42 @@ test("listGames calls GET /games", async () => {
   assertEqual(`${calls[0].method} ${calls[0].path}`, "GET /games");
 });
 
+test("searchGames sends all search filters", async () => {
+  const { fetch, calls } = fakeApi({
+    "GET /games?q=Catan&players=4&maxDuration=90": [],
+  });
+
+  await withFakeFetch(fetch, () =>
+    api.searchGames({
+      q: "Catan",
+      players: 4,
+      maxDuration: 90,
+    })
+  );
+
+  assertEqual(calls[0].method, "GET");
+  assertEqual(calls[0].path, "/games");
+  assertEqual(calls[0].search, "?q=Catan&players=4&maxDuration=90");
+});
+
+test("searchGames ignores empty and invalid filters", async () => {
+  const { fetch, calls } = fakeApi({
+    "GET /games": [],
+  });
+
+  await withFakeFetch(fetch, () =>
+    api.searchGames({
+      q: "   ",
+      players: "abc",
+      maxDuration: "-90",
+    })
+  );
+
+  assertEqual(calls[0].method, "GET");
+  assertEqual(calls[0].path, "/games");
+  assertEqual(calls[0].search, "");
+});
+
 test("getMemberLoans calls GET /members/:id/loans", async () => {
   const loans = [
     {

@@ -105,11 +105,37 @@ window.addEventListener("hashchange", refresh);
 // --- Jeux ------------------------------------------------------------------
 
 async function loadGames() {
-  // demande tous les jeux au serveur
-  const games = await api.listGames();
-  // vérification si games est vide == .hidden
-  $("#games-empty").hidden = games.length > 0;
-  // si des objets sont présent == création d'une gameCard / objet
+  // récupération des critères de recherche
+  const q = $("#game-search").value.trim();
+  const players = $("#game-players").value.trim();
+  const maxDuration = $("#game-max-duration").value.trim();
+
+  // préparation des filtres valides
+  const filters = {};
+
+  if (q) {
+    filters.q = q;
+  }
+
+  if (/^\d+$/.test(players) && Number(players) > 0) {
+    filters.players = players;
+  }
+
+  if (/^\d+$/.test(maxDuration) && Number(maxDuration) > 0) {
+    filters.maxDuration = maxDuration;
+  }
+
+  // récupération des jeux selon les filtres
+  const hasFilters = Object.keys(filters).length > 0;
+  const games = hasFilters
+    ? await api.searchGames(filters)
+    : await api.listGames();
+
+  // distinction entre ludothèque vide et recherche sans résultat
+  $("#games-empty").hidden = hasFilters || games.length > 0;
+  $("#games-no-results").hidden = !hasFilters || games.length > 0;
+
+  // affichage des jeux
   $("#games-list").replaceChildren(...games.map(gameCard));
 }
 
@@ -577,6 +603,20 @@ bindSubmit(memberDialog, memberForm, (data) => {
 
   // Sinon création 
   return api.createMember(member);
+});
+
+// événements des filtres de recherche des jeux
+$("#game-search").addEventListener("input", loadGames);
+$("#game-players").addEventListener("input", loadGames);
+$("#game-max-duration").addEventListener("input", loadGames);
+
+// réinitialisation des filtres
+$("#reset-game-filters").addEventListener("click", () => {
+  $("#game-search").value = "";
+  $("#game-players").value = "";
+  $("#game-max-duration").value = "";
+
+  loadGames();
 });
 
 refresh();

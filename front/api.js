@@ -112,7 +112,27 @@ export const api = {
   // JEUX :
 
   // récupérer tous les jeux
-  listGames: () => request("GET", "/games"),
+    listGames: () => request("GET", "/games"),
+  // rechercher des jeux avec des filtres
+    searchGames: (filters = {}) => {
+      const params = new URLSearchParams();
+
+      if (typeof filters.q === "string" && filters.q.trim() !== "") {
+        params.set("q", filters.q.trim());
+      }
+
+        if (/^\d+$/.test(String(filters.players ?? "").trim()) && Number(filters.players) > 0) {
+          params.set("players", String( filters.players).trim());
+        }
+
+        if (/^\d+$/.test(String(filters.maxDuration ?? "").trim()) && Number(filters.maxDuration) > 0) {
+          params.set("maxDuration", String( filters.maxDuration).trim());
+        }
+
+      const query = params.toString();
+
+      return request("GET", query ? `/games?${query}` : "/games");
+    },
   // créer un nouveau jeu
   createGame: (game) => request("POST", "/games", game),
   // modifier un jeu existant

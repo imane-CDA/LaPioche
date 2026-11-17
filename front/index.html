@@ -39,7 +39,33 @@
       
       <!-- message si aucun jeu n'est enregistré -->
       <p id="games-empty" class="empty" hidden>La ludothèque ne contient aucun jeu pour le moment. Cliquez sur « Ajouter un jeu » pour créer le premier.</p>
-      
+
+      <!-- filtres de recherche -->
+      <div class="filters">
+        <label>
+          Rechercher un jeu
+          <input type="search" id="game-search" placeholder="Titre du jeu">
+        </label>
+
+        <label>
+          Nombre de joueurs
+          <input type="number" id="game-players" min="1" step="1" placeholder="Ex. 4">
+        </label>
+
+        <label>
+          Durée maximale (minutes)
+          <input type="number" id="game-max-duration" min="1" step="1" placeholder="Ex. 90">
+        </label>
+
+        <div class="actions">
+          <button type="button" id="reset-game-filters">Réinitialiser</button>
+        </div>
+      </div>
+
+      <!-- message si aucun jeu ne correspond aux filtres -->
+      <p id="games-no-results" class="empty" hidden>
+        Aucun jeu ne correspond à votre recherche.
+      </p>
       <!-- liste des jeux -->
       <ul id="games-list" class="cards"></ul>
       

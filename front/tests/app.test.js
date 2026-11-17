@@ -127,6 +127,94 @@ test("with no game, a message invites to add one", async () => {
   assertIncludes(app.$("#games-empty").textContent, "Ajouter un jeu");
 });
 
+// Recherche et filtres des jeux
+
+test("searching games by title sends the search query", async () => {
+  const app = await mountApp({
+    "GET /games": [catan, dixit],
+    "GET /games?q=Catan": [catan],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  app.type(app.$("#game-search"), "Catan");
+
+  await waitFor(
+    () => app.calls.some(
+      (call) => call.method === "GET" && call.search === "?q=Catan"
+    ),
+    "la recherche de Catan"
+  );
+
+  await waitFor(() => app.$$("#games-list .card").length === 1);
+  assertTrue(cardOf(app, "Catan") !== undefined);
+});
+
+test("search filters send player count and maximum duration", async () => {
+  const app = await mountApp({
+    "GET /games": [catan, dixit],
+    "GET /games?players=4&maxDuration=90": [catan],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  app.type(app.$("#game-players"), "4");
+  app.type(app.$("#game-max-duration"), "90");
+
+  await waitFor(
+    () => app.calls.some(
+      (call) =>
+        call.method === "GET" &&
+        call.search === "?players=4&maxDuration=90"
+    ),
+    "l'envoi des filtres joueurs et durée"
+  );
+});
+
+test("search with no matching game displays a specific message", async () => {
+  const app = await mountApp({
+    "GET /games": [catan, dixit],
+    "GET /games?q=Inconnu": [],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  app.type(app.$("#game-search"), "Inconnu");
+
+  await waitFor(() => !app.$("#games-no-results").hidden);
+
+  assertIncludes(
+    app.$("#games-no-results").textContent,
+    "Aucun jeu ne correspond"
+  );
+
+  assertTrue(
+    app.$("#games-empty").hidden,
+    "le message de ludothèque vide ne doit pas apparaître"
+  );
+});
+
+test("resetting search filters reloads all games", async () => {
+  const app = await mountApp({
+    "GET /games": [catan, dixit],
+    "GET /games?q=Catan": [catan],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  app.type(app.$("#game-search"), "Catan");
+
+  await waitFor(() => app.$$("#games-list .card").length === 1);
+
+  app.click("Réinitialiser");
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  assertEqual(app.$("#game-search").value, "");
+  assertEqual(app.$("#game-players").value, "");
+  assertEqual(app.$("#game-max-duration").value, "");
+});
+
 test("adding a game posts the form then reloads the list", async () => {
   const app = await mountApp({ "GET /games": [catan], "POST /games": [201, { ...catan, id: "g3", title: "Dixit" }] });
   await waitFor(() => app.$$("#games-list .card").length === 1);

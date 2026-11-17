@@ -15,9 +15,45 @@ struct GameController: RouteCollection {
 
     @Sendable
     func index(req: Request) async throws -> [GameDTO] {
-        let games = try await Game.query(on: req.db)
+        let search = req.query[String.self, at: "q"]
+
+        let playersString = req.query[String.self, at: "players"]
+        let players = playersString.flatMap { Int($0) }
+
+        let maxDurationString = req.query[String.self, at: "maxDuration"]
+        let maxDuration = maxDurationString.flatMap { Int($0) }
+
+        if playersString != nil && (players == nil || players! <= 0) {
+            throw Abort(.badRequest, reason: "Players must be a positive integer")
+        }
+
+        if maxDurationString != nil && (maxDuration == nil || maxDuration! <= 0) {
+            throw Abort(.badRequest, reason: "Max duration must be a positive integer")
+        }
+
+        var query = Game.query(on: req.db)
+
+        if let search, !search.isEmpty {
+            query = query.filter(
+                \.$title ~~ search
+            )
+        }
+
+        if let players {
+            query = query
+                .filter(\.$minPlayers <= players)
+                .filter(\.$maxPlayers >= players)
+        }
+
+        if let maxDuration {
+            query = query
+                .filter(\.$durationMinutes <= maxDuration)
+        }
+
+        let games = try await query
             .with(\.$loans)
             .all()
+
         return games.map { $0.toDTO() }
     }
 

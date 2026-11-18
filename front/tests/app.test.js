@@ -171,6 +171,31 @@ test("search filters send player count and maximum duration", async () => {
   );
 });
 
+test("availability filter combines with title search", async () => {
+  const app = await mountApp({
+    "GET /games": [catan, dixit],
+    "GET /games?q=Catan": [catan],
+    "GET /games?q=Catan&available=true": [catan],
+  });
+
+  await waitFor(() => app.$$("#games-list .card").length === 2);
+
+  app.type(app.$("#game-search"), "Catan");
+
+  await waitFor(() => app.$$("#games-list .card").length === 1);
+
+  app.$("#game-available").click();
+
+  await waitFor(
+    () => app.calls.some(
+      (call) =>
+        call.method === "GET" &&
+        call.search === "?q=Catan&available=true"
+    ),
+    "la combinaison de la recherche par titre et du filtre disponibilité"
+  );
+});
+
 test("search with no matching game displays a specific message", async () => {
   const app = await mountApp({
     "GET /games": [catan, dixit],
@@ -198,6 +223,7 @@ test("resetting search filters reloads all games", async () => {
   const app = await mountApp({
     "GET /games": [catan, dixit],
     "GET /games?q=Catan": [catan],
+    "GET /games?q=Catan&available=true": [catan],
   });
 
   await waitFor(() => app.$$("#games-list .card").length === 2);
@@ -205,14 +231,23 @@ test("resetting search filters reloads all games", async () => {
   app.type(app.$("#game-search"), "Catan");
 
   await waitFor(() => app.$$("#games-list .card").length === 1);
-
-  app.click("Réinitialiser");
-
+    
+  app.$("#game-available").click();
+    
+  await waitFor(() =>
+        app.calls.some(
+          (call) => call.search === "?q=Catan&available=true"
+        )
+  );
+    
+ app.click("Réinitialiser");
+    
   await waitFor(() => app.$$("#games-list .card").length === 2);
 
   assertEqual(app.$("#game-search").value, "");
   assertEqual(app.$("#game-players").value, "");
   assertEqual(app.$("#game-max-duration").value, "");
+  assertEqual(app.$("#game-available").checked, false);
 });
 
 test("adding a game posts the form then reloads the list", async () => {

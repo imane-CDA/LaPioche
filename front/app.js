@@ -109,6 +109,7 @@ async function loadGames() {
   const q = $("#game-search").value.trim();
   const players = $("#game-players").value.trim();
   const maxDuration = $("#game-max-duration").value.trim();
+  const availableOnly = $("#game-available").checked;
 
   // préparation des filtres valides
   const filters = {};
@@ -123,6 +124,10 @@ async function loadGames() {
 
   if (/^\d+$/.test(maxDuration) && Number(maxDuration) > 0) {
     filters.maxDuration = maxDuration;
+  }
+    
+  if (availableOnly) {
+      filters.available = true;
   }
 
   // récupération des jeux selon les filtres
@@ -608,13 +613,15 @@ bindSubmit(memberDialog, memberForm, (data) => {
 // événements des filtres de recherche des jeux
 $("#game-search").addEventListener("input", loadGames);
 $("#game-players").addEventListener("input", loadGames);
-$("#game-max-duration").addEventListener("input", loadGames);
+$("#game-max-duration").addEventListener("input", loadGames)
+$("#game-available").addEventListener("change", loadGames);
 
 // réinitialisation des filtres
 $("#reset-game-filters").addEventListener("click", () => {
   $("#game-search").value = "";
   $("#game-players").value = "";
   $("#game-max-duration").value = "";
+  $("#game-available").checked = false;
 
   loadGames();
 });

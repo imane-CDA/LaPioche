@@ -53,7 +53,7 @@ test("listGames calls GET /games", async () => {
 
 test("searchGames sends all search filters", async () => {
   const { fetch, calls } = fakeApi({
-    "GET /games?q=Catan&players=4&maxDuration=90": [],
+    "GET /games?q=Catan&players=4&maxDuration=90&available=true": [],
   });
 
   await withFakeFetch(fetch, () =>
@@ -61,12 +61,26 @@ test("searchGames sends all search filters", async () => {
       q: "Catan",
       players: 4,
       maxDuration: 90,
+      available: true
     })
   );
 
   assertEqual(calls[0].method, "GET");
   assertEqual(calls[0].path, "/games");
-  assertEqual(calls[0].search, "?q=Catan&players=4&maxDuration=90");
+  assertEqual(calls[0].search, "?q=Catan&players=4&maxDuration=90&available=true");
+});
+
+test("searchGames sends available=false", async () => {
+  const { fetch, calls } = fakeApi({
+    "GET /games?available=false": [],
+  });
+
+  await withFakeFetch(fetch, () =>
+    api.searchGames({ available: false })
+  );
+
+  assertEqual(calls[0].method, "GET");
+  assertEqual(calls[0].search, "?available=false");
 });
 
 test("searchGames ignores empty and invalid filters", async () => {

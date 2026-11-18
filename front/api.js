@@ -128,6 +128,10 @@ export const api = {
         if (/^\d+$/.test(String(filters.maxDuration ?? "").trim()) && Number(filters.maxDuration) > 0) {
           params.set("maxDuration", String( filters.maxDuration).trim());
         }
+        
+        if (typeof filters.available === "boolean") {
+            params.set("available", String(filters.available));
+        }
 
       const query = params.toString();
 

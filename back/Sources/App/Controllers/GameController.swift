@@ -23,6 +23,16 @@ struct GameController: RouteCollection {
         let maxDurationString = req.query[String.self, at: "maxDuration"]
         let maxDuration = maxDurationString.flatMap { Int($0) }
 
+        let availableString = req.query[String.self, at: "available"]
+        var available: Bool?
+
+        if let availableString {
+            guard availableString == "true" || availableString == "false" else {
+                throw Abort(.badRequest, reason: "Available must be true or false")
+            }
+            available = availableString == "true"
+        }
+
         if playersString != nil && (players == nil || players! <= 0) {
             throw Abort(.badRequest, reason: "Players must be a positive integer")
         }
@@ -53,6 +63,12 @@ struct GameController: RouteCollection {
         let games = try await query
             .with(\.$loans)
             .all()
+
+        if let available {
+            return games
+                .filter { $0.isAvailable == available }
+                .map { $0.toDTO() }
+        }
 
         return games.map { $0.toDTO() }
     }
